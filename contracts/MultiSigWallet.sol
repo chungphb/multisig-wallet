@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 contract MultiSigWallet {
     // Events.
     event ProposeTransaction(uint indexed txId, address indexed to, uint value, bytes data);
+    event ApproveTransaction(address indexed owner, uint indexed txId);
 
     // State variables.
     address[] public owners;
@@ -19,6 +20,8 @@ contract MultiSigWallet {
     }
     Transaction[] public transactions;
 
+    mapping(uint => mapping(address => bool)) public approvals;
+
     // Modifiers.
     modifier onlyOwner() {
         require(isOwner[msg.sender], "Not an owner");
@@ -32,6 +35,11 @@ contract MultiSigWallet {
 
     modifier txNotExecuted(uint txId) {
         require(!transactions[txId].executed, "Transaction already executed");
+        _;
+    }
+
+    modifier txNotApproved(uint txId) {
+        require(!approvals[txId][msg.sender], "Transaction already approved");
         _;
     }
 
@@ -89,5 +97,17 @@ contract MultiSigWallet {
             numApprovals: 0
         }));
         emit ProposeTransaction(transactions.length - 1, _to, _value, _data);
+    }
+
+    function approveTransaction(uint txId)
+        public
+        onlyOwner
+        txExists(txId)
+        txNotApproved(txId)
+        txNotExecuted(txId)
+    {
+        approvals[txId][msg.sender] = true;
+        transactions[txId].numApprovals++;
+        emit ApproveTransaction(msg.sender, txId);
     }
 }
