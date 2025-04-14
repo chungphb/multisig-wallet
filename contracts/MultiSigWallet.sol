@@ -6,6 +6,7 @@ contract MultiSigWallet {
     event ProposeTransaction(uint indexed txId, address indexed to, uint value, bytes data);
     event ApproveTransaction(address indexed owner, uint indexed txId);
     event RejectTransaction(address indexed owner, uint indexed txId);
+    event ConfirmTransaction(uint indexed txId);
 
     // State variables.
     address[] public owners;
@@ -122,5 +123,25 @@ contract MultiSigWallet {
         approvals[txId][msg.sender] = false;
         transactions[txId].numApprovals--;
         emit RejectTransaction(msg.sender, txId);
+    }
+
+    function confirmTransaction(uint txId)
+        public
+        onlyOwner
+        txExists(txId)
+        txNotExecuted(txId)
+    {
+        Transaction storage transaction = transactions[txId];
+        require(
+            transaction.numApprovals >= requiredApprovals,
+            "Not enough approvals"
+        );
+
+        transaction.executed = true;
+
+        (bool success, ) = transaction.to.call{value: transaction.value}(transaction.data);
+        require(success, "Transaction failed");
+
+        emit ConfirmTransaction(txId);
     }
 }
