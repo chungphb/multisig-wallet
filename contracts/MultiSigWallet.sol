@@ -7,6 +7,15 @@ contract MultiSigWallet {
     mapping(address => bool) public isOwner;
     uint public requiredApprovals;
 
+    struct Transaction {
+        address to;
+        uint value;
+        bytes data;
+        bool executed;
+        uint numApprovals;
+    }
+    Transaction[] public transactions;
+
     // Modifiers.
     modifier onlyOwner() {
         require(isOwner[msg.sender], "Not an owner");
@@ -31,5 +40,26 @@ contract MultiSigWallet {
         }
 
         requiredApprovals = _requiredApprovals;
+    }
+
+    function getTransaction(uint txId)
+        public
+        view
+        returns (
+            address to,
+            uint value,
+            bytes memory data,
+            bool executed,
+            uint numApprovals
+        )
+    {
+        Transaction storage transaction = transactions[txId];
+        return (
+            transaction.to,
+            transaction.value,
+            transaction.data,
+            transaction.executed,
+            transaction.numApprovals
+        );
     }
 }
