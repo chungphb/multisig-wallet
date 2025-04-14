@@ -7,6 +7,7 @@ contract MultiSigWallet {
     event ApproveTransaction(address indexed owner, uint indexed txId);
     event RejectTransaction(address indexed owner, uint indexed txId);
     event ConfirmTransaction(uint indexed txId);
+    event Deposit(address indexed sender, uint amount);
 
     // State variables.
     address[] public owners;
@@ -63,6 +64,11 @@ contract MultiSigWallet {
         }
 
         requiredApprovals = _requiredApprovals;
+    }
+
+    // Receive function.
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value);
     }
 
     // Functions
@@ -143,5 +149,9 @@ contract MultiSigWallet {
         require(success, "Transaction failed");
 
         emit ConfirmTransaction(txId);
+    }
+
+    function getOwners() public view returns (address[] memory) {
+        return owners;
     }
 }
